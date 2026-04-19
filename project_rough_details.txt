@@ -1,0 +1,3 @@
+
+We want to create an openscad script to model 3d bronze plaques (like memorial plaques, ships plaques, etc). 
+We want to be able to control the text and properties of each line, variable number. We want the script to scale the font size if the test is too large. We want the border, thickness and properties configurable. Please request any clarifications needed and make suggestions that would improve this project. 
