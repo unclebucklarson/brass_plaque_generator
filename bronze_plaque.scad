@@ -1,12 +1,13 @@
 // Bronze Plaque OpenSCAD Script
-// Version 1.0.0
+// Version 1.1.0
 //
 // Generates a 3D bronze-style plaque with:
 //   - Solid base slab
 //   - Raised border frame around the perimeter
 //   - Recessed field inside the border
 //   - Optional raised medallion in the field
-//   - Text engraved into the field/medallion surface
+//   - Raised / extruded text on the field or medallion surface
+//   - All raised features (text, medallion) stay within border height
 //   - Optional through-hole mounting holes
 //   - Variable number of text lines with auto-scaling
 //
@@ -32,7 +33,7 @@ medallion_enabled  = false;
 medallion_shape    = "oval"; // "circle", "oval", or "rect"
 medallion_width    = 120;
 medallion_height   = 80;
-medallion_raise    = 1;     // how far the medallion surface is above the field
+medallion_raise    = 0.5;   // how far medallion rises above field (clamped to border_height)
 
 // --- Text ---
 // Supply lines as an OpenSCAD vector of strings — any length.
@@ -42,10 +43,10 @@ text_lines = [
     "1940 - 2020",
 ];
 text_font          = "Liberation Sans:style=Bold";
-text_size           = 12;   // desired font size (will be scaled down if needed)
+text_size          = 12;    // desired font size (will be scaled down if needed)
 text_halign        = "center";  // "left", "center", or "right"
-text_line_spacing   = 1.4;  // multiplier on font size
-text_engrave_depth  = 0.8;  // depth of engraving into the surface
+text_line_spacing  = 1.4;   // multiplier on font size
+text_raise         = 0.8;   // height of raised text above the surface it sits on
 
 // --- Mounting holes ---
 mounting_holes_enabled  = true;
@@ -66,8 +67,8 @@ $fn = 64;
 // The total Z height of the plaque at the border top
 total_z = plaque_base + field_depth + border_height;
 
-// Field surface Z (the flat area where text sits when no medallion)
-field_z = plaque_base + field_depth;  // same as total_z - border_height
+// Field surface Z (the flat recessed area)
+field_z = plaque_base + field_depth;
 
 // Inner field rectangle
 field_x = border_enabled ? border_width : 0;
@@ -75,11 +76,18 @@ field_y = border_enabled ? border_width : 0;
 field_w = plaque_width  - 2 * field_x;
 field_h = plaque_height - 2 * field_y;
 
-// Medallion surface Z
-medallion_z = field_z + medallion_raise;
+// Clamp medallion raise so it never exceeds border height
+_medallion_raise = min(medallion_raise, border_height);
 
-// Text surface Z — the surface the text is engraved into
-text_surface_z = medallion_enabled ? medallion_z : field_z;
+// Medallion surface Z
+medallion_z = field_z + _medallion_raise;
+
+// The surface Z that text sits on
+text_base_z = medallion_enabled ? medallion_z : field_z;
+
+// Clamp text raise so the top of the text never exceeds border top
+_max_text_raise = total_z - text_base_z;
+_text_raise = min(text_raise, _max_text_raise);
 
 // Text area available for layout
 text_area_w = medallion_enabled ? medallion_width  - 10 : field_w - 10;
@@ -120,22 +128,20 @@ scaled_text_size = _auto_scaled_size();
 // MODULES
 // ============================================================
 
-// --- Solid plaque body (border + field + medallion) ---------
+// --- Solid plaque body at border-top height -----------------
 module plaque_body() {
-    // 1. Full slab at border-top height
     cube([plaque_width, plaque_height, total_z]);
 }
 
-// --- Material to subtract from the body to form the recess --
+// --- Material to subtract to form the recessed field --------
 module field_recess() {
     if (border_enabled && field_w > 0 && field_h > 0) {
-        // Cut the field down from border-top to field_z
         translate([field_x, field_y, field_z])
-            cube([field_w, field_h, border_height + 1]); // +1 ensures clean cut
+            cube([field_w, field_h, border_height + 1]);
     }
 }
 
-// --- Raised medallion added back on top of field ------------
+// --- Raised medallion on the field surface ------------------
 module medallion() {
     if (medallion_enabled) {
         cx = plaque_width  / 2;
@@ -143,13 +149,13 @@ module medallion() {
 
         translate([cx, cy, field_z]) {
             if (medallion_shape == "circle") {
-                cylinder(r = medallion_width / 2, h = medallion_raise);
+                cylinder(r = medallion_width / 2, h = _medallion_raise);
             } else if (medallion_shape == "oval") {
                 scale([medallion_width / medallion_height, 1, 1])
-                    cylinder(r = medallion_height / 2, h = medallion_raise);
+                    cylinder(r = medallion_height / 2, h = _medallion_raise);
             } else { // "rect"
                 translate([-medallion_width/2, -medallion_height/2, 0])
-                    cube([medallion_width, medallion_height, medallion_raise]);
+                    cube([medallion_width, medallion_height, _medallion_raise]);
             }
         }
     }
@@ -165,30 +171,28 @@ module mounting_holes() {
     }
 }
 
-// --- 3-D text geometry (used for subtraction) ---------------
+// --- 3-D raised text geometry (added to the plaque) ---------
 module text_geometry() {
     n = len(text_lines);
     if (n > 0) {
-        // Total text block height
         block_h = n * scaled_text_size * text_line_spacing;
 
-        // Centre of the text area
         cx = plaque_width  / 2;
         cy = plaque_height / 2;
 
-        // Y of the first baseline — top of block minus half ascender
+        // First baseline: top of text block, offset down by ascender
         first_y = cy + block_h / 2 - scaled_text_size * 0.85;
 
         for (i = [0 : n - 1]) {
             line_y = first_y - i * scaled_text_size * text_line_spacing;
 
-            // X anchor depends on alignment
             line_x = (text_halign == "left")   ? field_x + 5 :
                      (text_halign == "right")  ? plaque_width - field_x - 5 :
                      cx;
 
-            translate([line_x, line_y, text_surface_z - text_engrave_depth])
-                linear_extrude(height = text_engrave_depth + 0.1)
+            // Text rises upward from the surface
+            translate([line_x, line_y, text_base_z])
+                linear_extrude(height = _text_raise)
                     text(text_lines[i],
                          size    = scaled_text_size,
                          font    = text_font,
@@ -205,36 +209,17 @@ module text_geometry() {
 module bronze_plaque() {
     difference() {
         union() {
-            plaque_body();
-            // Medallion sits on top of field after recess is cut,
-            // but since we do body-minus-recess we add medallion to union
-            // so it sticks up from the field.
-        }
-        field_recess();
-        mounting_holes();
-        text_geometry();
-    }
-    // Add medallion *after* the difference so it isn't cut by the recess
-    medallion();
-    // Now subtract text from the medallion surface too
-    difference() {
-        // empty union — we only need the subtraction pass
-        // OpenSCAD trick: wrap in a group
-    }
-}
-
-// Simpler assembly that avoids the double-pass issue:
-module bronze_plaque_v2() {
-    difference() {
-        union() {
+            // Start with full slab, cut the recess, add medallion back
             difference() {
                 plaque_body();
                 field_recess();
             }
             medallion();
+            // Raised text is part of the solid body
+            text_geometry();
         }
+        // Subtract only the mounting holes from everything
         mounting_holes();
-        text_geometry();
     }
 }
 
@@ -242,7 +227,7 @@ module bronze_plaque_v2() {
 // MAIN
 // ============================================================
 
-bronze_plaque_v2();
+bronze_plaque();
 
 // --- Material calculator (echo) ---
 plaque_vol_cm3 = (plaque_width * plaque_height * total_z) / 1000;

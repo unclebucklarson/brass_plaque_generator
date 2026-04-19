@@ -10,6 +10,7 @@ Parametric OpenSCAD script for generating 3D bronze-style plaques (memorial, shi
 - **Medallion** -- optional raised circle/oval/rect in the centre
 - **Mounting holes** -- corner or top-bottom layout, configurable
 - **Material calculator** -- estimated weight echoed during render
+- **Raised lettering** -- text is extruded upward, clamped to never exceed border height
 - **Clean STL output** -- manifold mesh, ready for slicing or casting
 
 ## Quick Start
@@ -72,7 +73,7 @@ Edit the top of `bronze_plaque.scad` or override with `-D` on the command line.
 | `text_size` | Desired font size (mm) | 12 |
 | `text_halign` | "left", "center", or "right" | "center" |
 | `text_line_spacing` | Line spacing multiplier | 1.4 |
-| `text_engrave_depth` | Depth of engraving (mm) | 0.8 |
+| `text_raise` | Height of raised text (mm) | 0.8 |
 
 ### Mounting Holes
 

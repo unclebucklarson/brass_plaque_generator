@@ -29,6 +29,8 @@
 - [x] $fn=64 for smooth curves
 - [x] Material weight calculator (echo output)
 - [x] Zero warnings on render
+- [x] Raised/extruded text (not engraved)
+- [x] All raised features (text, medallion) clamped to border height
 
 ## Future Enhancements (not yet implemented)
 - [ ] SVG/DXF graphic import
