@@ -18,8 +18,9 @@
 // ============================================================
 
 // --- Overall plaque ---
-plaque_width       = 200;   // X dimension
-plaque_height      = 150;   // Y dimension
+plaque_width       = 150;   // X dimension
+plaque_height      = 75
+ ;   // Y dimension
 plaque_base        = 3;     // thickness of the back plate
 field_depth        = 1.5;   // how far the field is recessed below the border top
 
@@ -38,12 +39,12 @@ medallion_raise    = 0.5;   // how far medallion rises above field (clamped to b
 // --- Text ---
 // Supply lines as an OpenSCAD vector of strings — any length.
 text_lines = [
-    "In Loving Memory",
-    "John Doe",
-    "1940 - 2020",
+    "A Man For The Times",
+    "The Dude",
+    "1969 - 2026",
 ];
 text_font          = "Liberation Sans:style=Bold";
-text_size          = 12;    // desired font size (will be scaled down if needed)
+text_size          = 8;    // desired font size (will be scaled down if needed)
 text_halign        = "center";  // "left", "center", or "right"
 text_line_spacing  = 1.4;   // multiplier on font size
 text_raise         = 0.8;   // height of raised text above the surface it sits on

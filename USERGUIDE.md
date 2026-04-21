@@ -326,3 +326,188 @@ match your material (e.g. 1.24 for PLA plastic).
 | `mounting_hole_inset` | Distance from edge to hole (mm) | 12 |
 | `mounting_hole_layout` | "corners" (4 holes) or "top-bottom" (2 holes) | "corners" |
 | `material_density` | For weight estimate (g/cm³) | 8.7 |
+
+---
+
+## Advanced Script -- Per-Line Font and Size
+
+If you need each line of text to have its own font, size, or alignment, use
+`bronze_plaque_advanced.scad` instead of the basic script.
+
+Everything works the same way (border, medallion, mounting holes, etc.), but
+text is defined using **four matching lists** instead of a single list.
+
+### How it works
+
+Open `bronze_plaque_advanced.scad` and find the text section near the top.
+You will see four arrays that work together:
+
+```
+text_lines = [
+    "In Loving Memory",          // line 1
+    "John Doe",                  // line 2
+    "1940 - 2020",               // line 3
+    "Rest in Peace",             // line 4
+];
+
+text_fonts = [
+    "Liberation Serif:style=Italic",   // line 1 font
+    "Liberation Sans:style=Bold",      // line 2 font
+    "Liberation Sans:style=Regular",   // line 3 font
+    "Liberation Serif:style=Italic",   // line 4 font
+];
+
+text_sizes = [
+    8,       // line 1 size (mm)
+    14,      // line 2 size -- larger for the name
+    10,      // line 3 size
+    7,       // line 4 size -- smaller footer
+];
+
+text_aligns = [
+    "default",    // line 1 alignment (uses global)
+    "default",    // line 2
+    "default",    // line 3
+    "default",    // line 4
+];
+```
+
+**Important:** all four lists must have the **same number of entries**.
+Each entry at position 1 describes line 1, position 2 describes line 2, etc.
+
+### Special values
+
+- In `text_fonts`: use `"default"` to use the global `text_font` setting.
+- In `text_sizes`: use `0` to use the global `text_size` setting.
+- In `text_aligns`: use `"default"` to use the global `text_halign` setting.
+
+This means you can style only the lines you care about and leave the rest
+as `"default"` or `0`.
+
+### Example: Memorial plaque with styled lines
+
+```
+text_lines = [
+    "In Loving Memory Of",
+    "Margaret Thompson",
+    "12 March 1938 - 7 November 2024",
+    "Forever In Our Hearts",
+];
+
+text_fonts = [
+    "Liberation Serif:style=Italic",
+    "Liberation Sans:style=Bold",
+    "Liberation Sans:style=Regular",
+    "Liberation Serif:style=Italic",
+];
+
+text_sizes = [
+    8,
+    16,
+    9,
+    7,
+];
+
+text_aligns = [
+    "default",
+    "default",
+    "default",
+    "default",
+];
+```
+
+This produces: a small italic header, a large bold name, medium-sized dates,
+and a small italic footer -- all on the same plaque.
+
+### Example: Ship's plaque with mixed styles
+
+```
+text_lines = [
+    "SHIPS PLAQUE",
+    "HMS Victory",
+    "Royal Navy",
+    "Portsmouth",
+    "1765",
+];
+
+text_fonts = [
+    "Liberation Sans:style=Bold",
+    "Liberation Serif:style=Bold",
+    "Liberation Sans:style=Regular",
+    "Liberation Sans:style=Regular",
+    "Liberation Sans:style=Regular",
+];
+
+text_sizes = [
+    16,
+    12,
+    9,
+    8,
+    8,
+];
+
+text_aligns = [
+    "default",
+    "default",
+    "default",
+    "default",
+    "default",
+];
+```
+
+### Example: Left-aligned plaque with one centred title
+
+```
+text_lines = [
+    "Acme Corporation",
+    "Founded by J. Smith",
+    "Springfield, IL",
+    "Established 1962",
+];
+
+text_fonts = [
+    "Liberation Sans:style=Bold",
+    "default",
+    "default",
+    "default",
+];
+
+text_sizes = [
+    14,
+    0,
+    0,
+    0,
+];
+
+text_aligns = [
+    "center",
+    "left",
+    "left",
+    "left",
+];
+
+text_halign = "left";   // global default for lines that say "default"
+```
+
+Here the title is centred and bold at 14 mm, while all other lines inherit the
+global left alignment and global font size.
+
+### Auto-scaling with mixed sizes
+
+The script automatically scales all text down proportionally if the text block
+is too large for the plaque.  The size ratios between lines are preserved --
+if line 2 is twice as big as line 1, it will stay twice as big after scaling.
+
+### Exporting
+
+The export process is the same as the basic script:
+
+1. Press **F5** to preview.
+2. Press **F6** to do a full render.
+3. **File > Export > Export as STL**.
+
+Or from the command line:
+
+```bash
+openscad -o plaque.stl bronze_plaque_advanced.scad
+```
